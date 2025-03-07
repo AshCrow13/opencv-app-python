@@ -1,0 +1,78 @@
+plugins {
+    id 'com.android.application'
+    id 'com.chaquo.python'
+    id 'org.jetbrains.kotlin.android'
+}
+
+android {
+    namespace 'com.example.opencv_app_python'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.example.opencv_app_python"
+        minSdk 21
+        targetSdk 35
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        ndk {
+            abiFilters "arm64-v8a", "x86", "x86_64"
+        }
+
+        python {
+            version "3.8"
+        }
+
+        python {
+            buildPython "/Users/Andres/AppData/Local/Programs/Python/Python38/python.exe"
+        }
+
+        python{
+            pip {
+                install "numpy"
+                install "pillow"
+                install "opencv-python"
+            }
+        }
+
+        sourceSets {
+            main {
+                python.srcDir "src/main/python"
+            }
+    }
+
+        buildTypes {
+            release {
+                minifyEnabled false
+                proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            }
+        }
+        compileOptions {
+            //sourceCompatibility JavaVersion.VERSION_11
+            //targetCompatibility JavaVersion.VERSION_11
+            sourceCompatibility JavaVersion.VERSION_17
+            targetCompatibility JavaVersion.VERSION_17
+        }
+        kotlinOptions{
+            jvmTarget = '1.8'
+        }
+
+    }
+
+    dependencies {
+
+        implementation libs.appcompat
+        implementation libs.material
+        implementation libs.activity
+        implementation libs.constraintlayout
+        testImplementation libs.junit
+        androidTestImplementation libs.ext.junit
+        androidTestImplementation libs.espresso.core
+    }
+}
+
+dependencies {
+    implementation project(':opencv')
+}
