@@ -1,32 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
-    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:gravity="center">
+
+    <!-- Vista previa de la cámara -->
+    <androidx.camera.view.PreviewView
+        android:id="@+id/viewFinder"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="400dp"/>
 
-        <!-- ImageView -->
-        <ImageView
-            android:layout_width="408dp"
-            android:layout_height="408dp"
-            android:id="@+id/img_widget1"
-            android:layout_centerHorizontal="true"
-            android:src="@mipmap/ic_launcher" />
+    <!-- Botón para capturar imagen -->
+    <Button
+        android:id="@+id/btnCapture"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Capturar Imagen"
+        android:layout_marginTop="16dp"
+        android:layout_gravity="center"/>
 
-        <!-- TextView -->
+    <!-- Botón para comparar la imagen capturada con una plantilla -->
+    <Button
+        android:id="@+id/btnCompare"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Comparar con Plantilla"
+        android:layout_marginTop="8dp"
+        android:layout_gravity="center"/>
+
+    <!-- Botón para guardar la imagen como plantilla (corregido) -->
+    <Button
+        android:id="@+id/btnSaveTemplate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Guardar como Plantilla"
+        android:layout_marginTop="8dp"
+        android:layout_gravity="center"
+        android:visibility="gone"/> <!-- Asegúrate de que está presente -->
+
+    <!-- Texto donde se mostrarán los resultados -->
     <TextView
-        android:id="@+id/text_widget1"
-        android:layout_width="259dp"
-        android:layout_height="173dp"
-        android:layout_below="@+id/img_widget1"
-        android:layout_centerHorizontal="true"
-        android:textSize="36sp" />
-
-        <!-- Button -->
-        <Button
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Get Shape"
-            android:id="@+id/btn_grayscale"
-            android:layout_margin="120dp"
-            android:layout_below="@+id/text_widget1" />
-
-    </RelativeLayout>
+        android:id="@+id/txtResult"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Resultado:"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginTop="16dp"
+        android:layout_gravity="center"/>
+</LinearLayout>
