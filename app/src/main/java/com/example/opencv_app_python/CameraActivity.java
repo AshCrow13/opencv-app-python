@@ -5,6 +5,8 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Base64;
 import android.util.Log;
 import android.widget.Button;
@@ -13,6 +15,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.*;
 import androidx.camera.lifecycle.ProcessCameraProvider;
@@ -35,6 +38,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -67,7 +71,7 @@ public class CameraActivity extends AppCompatActivity {
         inputWidth = findViewById(R.id.inputWidth);
         inputHeight = findViewById(R.id.inputHeight);
 
-        // Verificar si imgPreview fue correctamente vinculado
+        // Verificar vinculación
         if (imgPreview == null) {
             Log.e("IMG_PREVIEW", "imgPreview ES NULL 😱");
         } else {
@@ -90,12 +94,22 @@ public class CameraActivity extends AppCompatActivity {
             startCamera();
         }
 
-        // Executor para cámara
+        // ✅ Inicializar el executor para tareas en segundo plano
         cameraExecutor = Executors.newSingleThreadExecutor();
 
-        // Listener del botón
+        // Botón de captura
         btnCapture.setOnClickListener(v -> takePhoto());
     }
+
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (cameraExecutor != null && !cameraExecutor.isShutdown()) {
+            cameraExecutor.shutdown();
+        }
+    }
+
 
 
     private void startCamera() {
@@ -180,11 +194,19 @@ public class CameraActivity extends AppCompatActivity {
                             return;
                         }
 
+                        // Verificar que el archivo existe y no está vacío
+                        if (!capturedFile.exists() || capturedFile.length() == 0) {
+                            txtResult.setText("Archivo recortado inválido o vacío.");
+                            return;
+                        }
+
                         // Mostrar la imagen recortada en la vista previa
                         imgPreview.setImageBitmap(croppedBitmap);
 
-                        // Procesar la imagen recortada con Python
-                        processImageWithPython(capturedFile);
+                        // Procesar la imagen con un pequeño retardo para asegurar que el archivo se haya guardado bien
+                        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                            processImageWithPython(capturedFile);
+                        }, 100); // Espera 100 ms antes de procesar
                     }
 
                     @Override
@@ -194,6 +216,7 @@ public class CameraActivity extends AppCompatActivity {
                     }
                 });
     }
+
 
 
     /*private void takePhoto() {
@@ -315,69 +338,107 @@ public class CameraActivity extends AppCompatActivity {
 
 
     private void processImageWithPython(File file) {
-        Python py = Python.getInstance();
+        cameraExecutor.execute(() -> {
+            Python py = Python.getInstance();
 
-        // Módulo de clasificación
-        PyObject shapeModule = py.getModule("image_processor");
-        String encodedImage = encodeImageToBase64(file);
-        PyObject classificationResult = shapeModule.callAttr("classify_shape", encodedImage);
+            // Módulo de clasificación
+            PyObject shapeModule = py.getModule("image_processor");
+            String encodedImage = encodeImageToBase64(file);
+            PyObject classificationResult = shapeModule.callAttr("classify_shape", encodedImage);
 
-        // Módulo de comparación
-        PyObject matchModule = py.getModule("myhelper");
-        List<String> paths = databaseHelper.getAllImagePaths();
-        String capturedPath = file.getAbsolutePath();
-        paths.remove(capturedPath); // Excluir la imagen actual
+            // Módulo de comparación
+            PyObject matchModule = py.getModule("myhelper");
+            List<String> paths = databaseHelper.getAllImagePaths();
+            String capturedPath = file.getAbsolutePath();
+            paths.remove(capturedPath);
 
-        // Llamar a la función de comparación en Python
-        PyObject matchResult = matchModule.callAttr("compare_with_templates", encodedImage, paths.toArray());
+            PyObject matchResultObj = matchModule.callAttr("compare_with_templates", encodedImage, paths.toArray());
+            Map<PyObject, PyObject> matchResult = matchResultObj.asMap();
 
-        // Depuración: Imprimir el resultado de Python
-        System.out.println("Resultado de Python: " + matchResult.toString());
+            System.out.println("Resultado de Python: " + matchResultObj.toString());
 
-        // Manejar errores
-        if (matchResult.containsKey("error")) {
-            String errorMsg = matchResult.get("error").toString();
-            txtResult.setText("Clasificación: " + classificationResult.toString() + "\n" +
-                    "Error al comparar: " + errorMsg);
-            return;
-        }
+            if (matchResult.containsKey(PyObject.fromJava("error"))) {
+                String errorMsg = matchResult.get(PyObject.fromJava("error")).toString();
+                runOnUiThread(() -> txtResult.setText("Clasificación: " + classificationResult.toString() + "\nError al comparar: " + errorMsg));
+                return;
+            }
 
-        PyObject pathObj = matchResult.get("path");
+            PyObject pathObj = matchResult.get(PyObject.fromJava("path"));
+            PyObject similarityObj = matchResult.get(PyObject.fromJava("similarity"));
+            PyObject matchNameObj = matchResult.get(PyObject.fromJava("match_name"));
 
-        // Si no hay coincidencia, guardar imagen como nueva
-        if (pathObj == null || pathObj.toString().isEmpty()) {
-            saveToDatabase(file, classificationResult.toString());
-            txtResult.setText("Clasificación: " + classificationResult + "\nNo se encontró coincidencia válida.");
-            return;
-        }
+            String pathStr = (pathObj != null) ? pathObj.toString() : null;
+            double similarity = (similarityObj != null) ? similarityObj.toDouble() : 0.0;
+            String matchName = (matchNameObj != null) ? matchNameObj.toString() : "";
 
-        // Coincidencia encontrada (incluso si la similitud es baja)
-        String bestPath = pathObj.toString();
-        double similarity = matchResult.get("similarity").toDouble(); // Puntaje entre 0 y 1.0
-        String matchName = matchResult.get("match_name").toString();
-        String tipo = databaseHelper.getClassificationByPath(bestPath);
+            System.out.println("DEBUG >> pathStr: " + pathStr);
+            System.out.println("DEBUG >> similarity: " + similarity);
 
-        // Mostrar resultados en la interfaz
-        txtResult.setText("Clasificación: " + classificationResult.toString() + "\n" +
-                "Coincidencia con: " + tipo + "\n" +
-                "Archivo: " + matchName + "\n" +
-                "Similitud: " + String.format("%.2f", similarity * 100) + "%"); // Mostrar similitud como porcentaje
+            double SIMILARITY_THRESHOLD = 0.5;
 
-        // Mostrar la imagen parecida
-        File imgFile = new File(bestPath);
-        if (!imgFile.exists()) {
-            System.out.println("La imagen no existe en: " + bestPath);
-            return;
-        }
+            if (pathStr == null || pathStr.equals("None") || pathStr.trim().isEmpty() || similarity < SIMILARITY_THRESHOLD) {
+                saveToDatabase(file, classificationResult.toString());
 
-        // Cargar y mostrar la imagen coincidente
-        Bitmap matchedBitmap = BitmapFactory.decodeFile(bestPath);
-        if (matchedBitmap != null) {
-            imgPreview.setImageBitmap(matchedBitmap);
-        } else {
-            System.out.println("No se pudo decodificar la imagen: " + bestPath);
-        }
+                runOnUiThread(() -> {
+                    if (similarity < SIMILARITY_THRESHOLD && pathStr != null && !pathStr.trim().isEmpty()) {
+                        txtResult.setText("Clasificación: " + classificationResult + "\n" +
+                                "Coincidencia con: " + matchName + " (Similitud: " +
+                                String.format("%.2f", similarity * 100) + "%, considerada demasiado baja)\n" +
+                                "Guardado como nueva pieza.");
+                    } else {
+                        txtResult.setText("Clasificación: " + classificationResult + "\nNo se encontró coincidencia válida.");
+                    }
+                });
+                return;
+            }
+
+            // Coincidencia válida encontrada
+            String bestPath = pathStr;
+            String tipo = databaseHelper.getClassificationByPath(bestPath);
+            File imgFile = new File(bestPath);
+
+            if (!imgFile.exists()) {
+                System.out.println("La imagen no existe en: " + bestPath);
+                return;
+            }
+
+            Bitmap matchedBitmap = BitmapFactory.decodeFile(bestPath);
+            if (matchedBitmap != null) {
+                final double simFinal = similarity;
+                final String tipoFinal = tipo;
+                final String matchNameFinal = matchName;
+                final String classificationFinal = classificationResult.toString();
+
+                runOnUiThread(() -> {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(CameraActivity.this);
+                    builder.setTitle("Coincidencia encontrada: " + tipoFinal);
+
+                    ImageView imageView = new ImageView(CameraActivity.this);
+                    imageView.setImageBitmap(matchedBitmap);
+                    imageView.setAdjustViewBounds(true);
+                    imageView.setPadding(20, 20, 20, 20);
+                    builder.setView(imageView);
+
+                    builder.setPositiveButton("OK", (dialog, which) -> {
+                        dialog.dismiss();
+                        txtResult.setText("Clasificación: " + classificationFinal + "\n" +
+                                "Coincidencia con: " + tipoFinal + "\n" +
+                                "Archivo: " + matchNameFinal + "\n" +
+                                "Similitud: " + String.format("%.2f", simFinal * 100) + "%");
+                    });
+
+                    builder.show();
+                });
+
+            } else {
+                runOnUiThread(() -> txtResult.setText("Clasificación: " + classificationResult.toString() + "\n" +
+                        "Coincidencia con: " + tipo + "\n" +
+                        "Archivo: " + matchName + "\n" +
+                        "Similitud: " + String.format("%.2f", similarity * 100) + "% (no se pudo mostrar imagen)"));
+            }
+        });
     }
+
 
 
     private void saveToDatabase(File file, String classification) {
@@ -391,12 +452,16 @@ public class CameraActivity extends AppCompatActivity {
 
         boolean inserted = databaseHelper.insertPiece(name, type, date, imagePath, dimensions, material);
 
-        if (inserted) {
-            Toast.makeText(this, "Pieza guardada", Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(this, "Error al guardar", Toast.LENGTH_SHORT).show();
-        }
+        // Mostrar el resultado del guardado en el hilo principal
+        runOnUiThread(() -> {
+            if (inserted) {
+                Toast.makeText(CameraActivity.this, "Pieza guardada", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(CameraActivity.this, "Error al guardar", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
+
 
     private String encodeImageToBase64(File file) {
         try {
