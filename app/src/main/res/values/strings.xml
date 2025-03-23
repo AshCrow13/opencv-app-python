@@ -1,3 +1,10 @@
 <resources>
-    <string name="app_name">opencv-app-python</string>
+    <string name="app_name">Clasificación de Piezas</string>
+
+    <!-- Opciones del Spinner -->
+    <string-array name="piece_types">
+        <item>Todos</item>
+        <item>Macho</item>
+        <item>Hembra</item>
+    </string-array>
 </resources>
