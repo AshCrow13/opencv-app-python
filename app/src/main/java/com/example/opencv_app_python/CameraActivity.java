@@ -218,125 +218,6 @@ public class CameraActivity extends AppCompatActivity {
     }
 
 
-
-    /*private void takePhoto() {
-        if (imageCapture == null) return;
-
-        String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
-        String fileName = "Pieza_" + timestamp + ".png";
-        File tempFile = new File(getExternalFilesDir(null), fileName);  // aún no se guarda
-
-        ImageCapture.OutputFileOptions options = new ImageCapture.OutputFileOptions.Builder(tempFile).build();
-
-        imageCapture.takePicture(options, ContextCompat.getMainExecutor(this),
-                new ImageCapture.OnImageSavedCallback() {
-                    @Override
-                    public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
-                        Bitmap bitmap = BitmapFactory.decodeFile(tempFile.getAbsolutePath());
-                        if (bitmap == null) {
-                            txtResult.setText("Error al cargar la imagen capturada.");
-                            return;
-                        }
-
-                        // Analizar imagen completa sin guardar aún
-                        processImageBeforeCrop(bitmap, fileName, tempFile);
-                    }
-
-                    @Override
-                    public void onError(@NonNull ImageCaptureException exception) {
-                        Log.e("CameraX", "Error al capturar imagen", exception);
-                        txtResult.setText("Error al capturar la imagen.");
-                    }
-                });
-    }*/
-
-
-    /*private void processImageBeforeCrop(Bitmap fullBitmap, String fileName, File tempFile) {
-        Log.d("PYTHON_FLOW", "⏳ Iniciando análisis con Python...");
-
-        Python py = Python.getInstance();
-        PyObject shapeModule = py.getModule("image_processor");
-
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        fullBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
-        String encodedImage = Base64.encodeToString(stream.toByteArray(), Base64.DEFAULT);
-
-        PyObject classificationResult = shapeModule.callAttr("classify_shape", encodedImage);
-        String classification = classificationResult.toString();
-        Log.d("PYTHON_FLOW", "✅ Clasificación: " + classification);
-
-        PyObject matchModule = py.getModule("myhelper");
-        List<String> paths = databaseHelper.getAllImagePaths();
-        Log.d("PYTHON_FLOW", "📦 Cantidad de imágenes para comparar: " + paths.size());
-
-        // ✅ CORRECTO: convertir ArrayList a lista de Python
-        PyObject pyPaths = Python.getInstance().getBuiltins().callAttr("list", paths);
-        PyObject matchResult = matchModule.callAttr("compare_with_templates", encodedImage, pyPaths);
-
-        Log.d("PYTHON_FLOW", "✅ Resultado de Python: " + matchResult.toString());
-
-        PyObject pathObj = matchResult.get("path");
-        String matchName = matchResult.containsKey("match_name") ? matchResult.get("match_name").toString() : "";
-
-        if (matchName.isEmpty() || matchName.equals("None")) {
-            Log.d("PYTHON_FLOW", "🆕 No se encontró coincidencia, procediendo a guardar imagen...");
-
-            int cropWidth = 200;
-            int cropHeight = 200;
-
-            try {
-                cropWidth = Integer.parseInt(inputWidth.getText().toString());
-                cropHeight = Integer.parseInt(inputHeight.getText().toString());
-            } catch (NumberFormatException e) {
-                Toast.makeText(this, "Usando tamaño por defecto (200x200)", Toast.LENGTH_SHORT).show();
-            }
-
-            int centerX = fullBitmap.getWidth() / 2;
-            int centerY = fullBitmap.getHeight() / 2;
-            int left = Math.max(centerX - cropWidth / 2, 0);
-            int top = Math.max(centerY - cropHeight / 2, 0);
-            Rect roi = new Rect(left, top, cropWidth, cropHeight);
-
-            Bitmap croppedBitmap = cropImage(fullBitmap, roi);
-
-            try (FileOutputStream out = new FileOutputStream(tempFile)) {
-                croppedBitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
-            } catch (IOException e) {
-                txtResult.setText("Error al guardar imagen recortada.");
-                Log.e("PYTHON_FLOW", "❌ Error al guardar imagen: " + e.getMessage());
-                return;
-            }
-
-            saveToDatabase(tempFile, classification);
-            imgPreview.setImageBitmap(croppedBitmap);
-            txtResult.setText("Clasificación: " + classification + "\nImagen guardada correctamente.");
-            Log.d("PYTHON_FLOW", "✅ Imagen guardada como: " + tempFile.getAbsolutePath());
-
-        } else {
-            Log.d("PYTHON_FLOW", "🔁 Imagen similar ya existe: " + matchName);
-            if (tempFile.exists()) tempFile.delete();
-
-            String bestPath = pathObj.toString();
-            int similarity = matchResult.get("similarity").toInt();
-            String tipo = databaseHelper.getClassificationByPath(bestPath);
-
-            txtResult.setText("Clasificación: " + classification + "\n" +
-                    "Coincidencia con: " + tipo + "\nArchivo: " + matchName + "\nSimilitud: " + similarity + " matches");
-
-            Bitmap matchedBitmap = BitmapFactory.decodeFile(bestPath);
-            if (matchedBitmap != null) {
-                imgPreview.setImageBitmap(matchedBitmap);
-            } else {
-                Toast.makeText(this, "No se pudo cargar la imagen coincidente.", Toast.LENGTH_SHORT).show();
-                Log.e("PYTHON_FLOW", "❌ No se pudo cargar imagen desde: " + bestPath);
-            }
-        }
-    }*/
-
-
-
-
-
     private void processImageWithPython(File file) {
         cameraExecutor.execute(() -> {
             Python py = Python.getInstance();
@@ -374,7 +255,7 @@ public class CameraActivity extends AppCompatActivity {
             System.out.println("DEBUG >> pathStr: " + pathStr);
             System.out.println("DEBUG >> similarity: " + similarity);
 
-            double SIMILARITY_THRESHOLD = 0.5;
+            double SIMILARITY_THRESHOLD = 0.8;
 
             if (pathStr == null || pathStr.equals("None") || pathStr.trim().isEmpty() || similarity < SIMILARITY_THRESHOLD) {
                 saveToDatabase(file, classificationResult.toString());
