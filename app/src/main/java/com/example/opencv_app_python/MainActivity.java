@@ -4,17 +4,27 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
+import android.util.Log;
+import java.util.List;
+import android.content.ActivityNotFoundException;
+
+
+
 
 public class MainActivity extends AppCompatActivity {
 
     private TextView tvBluetoothStatus;
     private Button btnCaptureAnalyze, btnHistory, btnSettings;
 
-    // ActivityResultLauncher para manejar el retorno desde SettingsActivity
+    private Button btnAbrirBotonera;
+
+
     private final ActivityResultLauncher<Intent> settingsLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
                 if (result.getResultCode() == RESULT_OK && result.getData() != null) {
@@ -26,38 +36,60 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_menu); // Cargar el nuevo menú principal
+        setContentView(R.layout.activity_menu);
 
         // Asignación de vistas
         tvBluetoothStatus = findViewById(R.id.tvBluetoothStatus);
         btnCaptureAnalyze = findViewById(R.id.btnCaptureAnalyze);
         btnHistory = findViewById(R.id.btnHistory);
         btnSettings = findViewById(R.id.btnSettings);
+        btnAbrirBotonera = findViewById(R.id.btnAbrirBotonera); // Nuevo botón
 
-        // Configurar eventos de los botones
+        // Botón: Cámara
         btnCaptureAnalyze.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, CameraActivity.class);
             startActivity(intent);
         });
 
+        // Botón: Historial
         btnHistory.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, HistoryActivity.class);
             startActivity(intent);
         });
 
+        // Botón: Configuración
         btnSettings.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
-            settingsLauncher.launch(intent); // Usar el launcher en vez de startActivity
+            settingsLauncher.launch(intent);
         });
 
-        // Simulación del estado del Bluetooth
+        btnAbrirBotonera = findViewById(R.id.btnAbrirBotonera);
+        btnAbrirBotonera.setOnClickListener(v -> {
+            Intent intent = new Intent();
+            intent.setClassName("com.example.javibotonera", "com.example.javibotonera.Dispositivos");
+
+            try {
+                startActivity(intent);
+            } catch (ActivityNotFoundException e) {
+                Toast.makeText(this, "No se pudo encontrar la app javibotonera instalada", Toast.LENGTH_LONG).show();
+                e.printStackTrace();
+            }
+        });
+
+
+
         updateBluetoothStatus(false);
+
+        // Mostrar todos los paquetes instalados (debug)
+        PackageManager pm = getPackageManager();
+        List<ApplicationInfo> apps = pm.getInstalledApplications(0);
+
+        for (ApplicationInfo app : apps) {
+            Log.d("InstalledApp", "Package: " + app.packageName);
+        }
+
     }
 
-    /**
-     * Actualiza el estado del Bluetooth en la pantalla.
-     * @param isConnected True si está conectado, False si no.
-     */
     private void updateBluetoothStatus(boolean isConnected) {
         if (isConnected) {
             tvBluetoothStatus.setText("🔵 Conectado a Arduino");

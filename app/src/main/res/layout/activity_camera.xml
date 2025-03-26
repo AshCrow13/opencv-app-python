@@ -36,6 +36,14 @@
             android:text="Capturar Imagen"
             android:layout_marginTop="12dp" />
 
+        <Button
+            android:id="@+id/btnOpenBotonera"
+            android:layout_width="194dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="🔗 Ir a la Botonera" />
+
+
         <!-- Imagen de resultado (match) -->
         <ImageView
             android:id="@+id/imgPreview"

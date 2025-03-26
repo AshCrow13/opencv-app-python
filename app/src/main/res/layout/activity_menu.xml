@@ -23,28 +23,36 @@
 
     <Button
         android:id="@+id/btnCaptureAnalyze"
-        android:layout_width="match_parent"
+        android:layout_width="284dp"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
         android:text="📸 Capturar y Analizar Imagen"
-        android:textSize="20dp"
-        android:layout_marginBottom="10dp"/>
+        android:textSize="20dp" />
 
     <Button
         android:id="@+id/btnHistory"
-        android:layout_width="match_parent"
+        android:layout_width="206dp"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
         android:text="📂 Historial de Piezas"
-        android:textSize="20dp"
-        android:layout_marginBottom="10dp"/>
+        android:textSize="20dp" />
 
     <Button
         android:id="@+id/btnSettings"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
         android:text="⚙️ Configuración"
-        android:textSize="20dp"
-        android:layout_marginBottom="10dp"/>
+        android:textSize="20dp" />
 
+
+    <Button
+        android:id="@+id/btnAbrirBotonera"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
+        android:text="🤖 Emparejar Arduino"
+        android:textSize="20dp" />
 
     <!-- Estado de Bluetooth -->
     <TextView

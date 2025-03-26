@@ -1,6 +1,7 @@
 package com.example.opencv_app_python;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -42,6 +43,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+
 public class CameraActivity extends AppCompatActivity {
 
     private PreviewView previewView;
@@ -63,6 +65,20 @@ public class CameraActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
 
+        Button btnOpenBotonera = findViewById(R.id.btnOpenBotonera);
+
+        btnOpenBotonera.setOnClickListener(v -> {
+            Intent intent = new Intent();
+            intent.setClassName("com.example.javibotonera", "com.example.javibotonera.Dispositivos");
+            try {
+                startActivity(intent);
+            } catch (Exception e) {
+                Toast.makeText(this, "No se pudo encontrar la app javibotonera", Toast.LENGTH_SHORT).show();
+                e.printStackTrace();
+            }
+        });
+
+
         // Inicializar vistas
         previewView = findViewById(R.id.viewFinder);
         btnCapture = findViewById(R.id.btnCapture);
@@ -70,6 +86,7 @@ public class CameraActivity extends AppCompatActivity {
         txtResult = findViewById(R.id.txtResult);
         inputWidth = findViewById(R.id.inputWidth);
         inputHeight = findViewById(R.id.inputHeight);
+
 
         // Verificar vinculación
         if (imgPreview == null) {
