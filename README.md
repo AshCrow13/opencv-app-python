@@ -18,3 +18,8 @@ Este repositorio contiene una aplicación de Python que utiliza la biblioteca Op
 1. Clona el repositorio:
    ```bash
    git clone https://github.com/Sdraen/opencv-app-python.git
+
+## 🐞 Errores comunes
+
+- ❗ *Error de sincronización Gradle*: Verifica tu conexión a Internet y vuelve a sincronizar.
+- ❗ *Python no encontrado*: Asegúrate de que Python esté instalado y la ruta esté bien especificada en `build.gradle`.
