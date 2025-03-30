@@ -25,6 +25,7 @@ Este repositorio contiene una aplicación de Python que utiliza la biblioteca Op
 - ❗ *Python no encontrado*: Asegúrate de que Python esté instalado y la ruta esté bien especificada en `build.gradle`.
 
 Verificar en el archivo build.gradle(Module :app):
+   ```bash
    python { 
       buildPython "C:/ruta/a/python.exe" // Cambiar por tu ruta local
    }
