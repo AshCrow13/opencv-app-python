@@ -26,7 +26,7 @@ android {
         }
 
         python {
-            buildPython "/Users/Andres/AppData/Local/Programs/Python/Python38/python.exe"
+            buildPython "C:/ruta/a/python.exe" // Cambiar por tu ruta local
         }
 
         python{
